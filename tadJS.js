@@ -156,6 +156,35 @@ DaysBetween: function(t1, t2) {
     return Math.round(Math.abs((t1.getTime() - t2.getTime())/oneDay));
 },
 
+tadBCR: function(r, cfs, atype, c, p, d) {
+    var bcr = 0.0;
+    var cf,dc=0.0,db=0.0;
+    var i,t;
+    atype = (typeof atype !== "undefined") ? atype : 1;
+    c = (typeof c !== "undefined") ? c : 1;
+    p = (typeof p !== "undefined") ? p : 1;
+    d = (typeof d !== "undefined") ? d : 1;
+
+    for (i=0; i< cfs.length; i++) {
+	if (atype == 0)
+		t = i*p+d*p;
+	else
+	{
+		if (i==0)
+			t = 0;
+		else
+			t = (i-1)*p+d*p;
+	}
+        cf = cfs[i];
+	if (cf < 0.0)
+	        dc += Math.abs(cf) * this.tadPVIF(r, t, c);
+	else
+        	db += cf * this.tadPVIF(r, t, c);
+    };
+    bcr = db / dc;
+    return bcr;
+},
+
 tadNPV: function(r, cfs, atype, c, p, d) {
     var npv = 0.0;
     var cf;
@@ -228,6 +257,64 @@ tadNFVbar: function(r, cfs, atype, c, p, d) {
     npv = this.tadNPVbar(r, cfs, atype, c, p, d);
     nfv = npv * this.tadFVIF(r, n, c);
     return nfv;
+},
+
+tadMIRR: function(fr, rr, cfs, atype, c, p, d) {
+    var mirr = 0.0;
+    var cf,db=0.0,dc=0.0;
+    var i,t,T;
+    atype = (typeof atype !== "undefined") ? atype : 1;
+    c = (typeof c !== "undefined") ? c : 1;
+    p = (typeof p !== "undefined") ? p : 1;
+    d = (typeof d !== "undefined") ? d : 1;
+    T = (cfs.length-1.0-atype) * p + p*d;
+    for (i=0; i< cfs.length; i++) {
+	if (atype == 0)
+		t = i*p+d*p;
+	else
+	{
+		if (i==0)
+			t = 0;
+		else
+			t = (i-1)*p+d*p;
+	}
+        cf = cfs[i];
+	if (cf < 0.0)
+	        dc += Math.abs(cf) * this.tadPVIF(fr, t, c);
+	else
+        	db += cf * this.tadFVIF(rr, t, c);
+    };
+    mirr = Math.pow(db / dc, 1.0/T) - 1.0;
+    return mirr;
+},
+
+tadPI: function(r, cfs, atype, c, p, d) {
+    var pi = 0.0;
+    var cf,de=0.0,dr=0.0;
+    var i,t;
+    atype = (typeof atype !== "undefined") ? atype : 1;
+    c = (typeof c !== "undefined") ? c : 1;
+    p = (typeof p !== "undefined") ? p : 1;
+    d = (typeof d !== "undefined") ? d : 1;
+
+    for (i=0; i< cfs.length; i++) {
+	if (atype == 0)
+		t = i*p+d*p;
+	else
+	{
+		if (i==0)
+			t = 0;
+		else
+			t = (i-1)*p+d*p;
+	}
+        cf = cfs[i];
+	if (cf < 0.0)
+	        de += Math.abs(cf) * this.tadPVIF(r, t, c);
+	else
+        	dr += cf * this.tadPVIF(r, t, c);
+    };
+    pi = dr / de;
+    return pi;
 },
 
 tadXNPV: function(r, data_values, c) {
@@ -352,12 +439,14 @@ tadIRR2: function(cfs, atype, guess, c, p, d) {
 };
 
 
-/*
+
 
 // Sample tests for tadJS functions
 // Following statements allow you to see test results for the functions
 // in tadJS by opening the accompanying tadJS.html file in your browser
-// To see the result, please remove the outer comment delimeters "/*" and "*/"
+// To see the result, please remove the outer comment delimeters
+
+/*
 
 var data_values = [];
 data_values.push({CF: -1000, T: "2012-01-01"});
@@ -387,6 +476,26 @@ document.write( "FVIF(10%, 10, 1/2, 1/2, 1) = " + tadJS.tadFVIF2(0.10,10,0.5,0.5
 document.write("<br/>");
 document.write( "FVIF(10%, 10, 1/2, 1/2, 1/2) = " + tadJS.tadFVIF2(0.10,10,0.5,0.5,0.5) );
 document.write("<br/>");
+document.write( "BCR(10%, [-1000,500,400,300,100], 1, 1, 1, 1) = " + tadJS.tadBCR(0.10,cfs) );
+document.write("<br/>");
+document.write( "BCR(10%, [-1000,500,400,300,100], 0, 1, 1, 1) = " + tadJS.tadBCR(0.10,cfs,0) );
+document.write("<br/>");
+document.write( "BCR(10%, [-1000,500,400,300,100], 1, 1/2, 1, 1) = " + tadJS.tadBCR(0.10,cfs,undefined, 0.5) );
+document.write("<br/>");
+document.write( "BCR(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1) = " + tadJS.tadBCR(0.10,cfs,undefined, 0.5, 0.5) );
+document.write("<br/>");
+document.write( "BCR(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1/2) = " + tadJS.tadBCR(0.10,cfs,undefined, 0.5, 0.5,0.5) );
+document.write("<br/>");
+document.write( "MIRR(10%, 8%, [-1000,500,400,300,100], 1, 1, 1, 1) = " + tadJS.tadMIRR(0.10,0.08,cfs) );
+document.write("<br/>");
+document.write( "MIRR(10%, 8%, [-1000,500,400,300,100], 0, 1, 1, 1) = " + tadJS.tadMIRR(0.10,0.08,cfs,0) );
+document.write("<br/>");
+document.write( "MIRR(10%, 8%, [-1000,500,400,300,100], 1, 1/2, 1, 1) = " + tadJS.tadMIRR(0.10,0.08,cfs,undefined, 0.5) );
+document.write("<br/>");
+document.write( "MIRR(10%, 8%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1) = " + tadJS.tadMIRR(0.10,0.08,cfs,undefined, 0.5, 0.5) );
+document.write("<br/>");
+document.write( "MIRR(10%, 8%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1/2) = " + tadJS.tadMIRR(0.10,0.08,cfs,undefined, 0.5, 0.5,0.5) );
+document.write("<br/>");
 document.write( "NPV(10%, [-1000,500,400,300,100], 1, 1, 1, 1) = " + tadJS.tadNPV(0.10,cfs) );
 document.write("<br/>");
 document.write( "NPV(10%, [-1000,500,400,300,100], 0, 1, 1, 1) = " + tadJS.tadNPV(0.10,cfs,0) );
@@ -406,6 +515,16 @@ document.write("<br/>");
 document.write( "NFV(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1) = " + tadJS.tadNFV(0.10,cfs,undefined, 0.5, 0.5) );
 document.write("<br/>");
 document.write( "NFV(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1/2) = " + tadJS.tadNFV(0.10,cfs,undefined, 0.5, 0.5,0.5) );
+document.write("<br/>");
+document.write( "PI(10%, [-1000,500,400,300,100], 1, 1, 1, 1) = " + tadJS.tadPI(0.10,cfs) );
+document.write("<br/>");
+document.write( "PI(10%, [-1000,500,400,300,100], 0, 1, 1, 1) = " + tadJS.tadPI(0.10,cfs,0) );
+document.write("<br/>");
+document.write( "PI(10%, [-1000,500,400,300,100], 1, 1/2, 1, 1) = " + tadJS.tadPI(0.10,cfs,undefined, 0.5) );
+document.write("<br/>");
+document.write( "PI(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1) = " + tadJS.tadPI(0.10,cfs,undefined, 0.5, 0.5) );
+document.write("<br/>");
+document.write( "PI(10%, [-1000,500,400,300,100], 1, 1/2, 1/2, 1/2) = " + tadJS.tadPI(0.10,cfs,undefined, 0.5, 0.5,0.5) );
 document.write("<br/>");
 document.write( "IRR( [-1000,500,400,300,100], 1, 1, 1, 1) = " + tadJS.tadIRR(cfs) );
 document.write("<br/>");
